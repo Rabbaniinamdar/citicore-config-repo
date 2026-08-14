@@ -12,13 +12,16 @@ spring:
 
   # ─── Database (DEV: H2) ───────────────────────────────────
   datasource:
-    url: jdbc:h2:mem:authdb;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: password
+    url: jdbc:mysql://localhost:3306/authdb
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
 
   h2:
     console:
