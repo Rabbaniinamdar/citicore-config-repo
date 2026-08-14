@@ -1,0 +1,42 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: notification-service
+
+  # ─── Mail (Gmail SMTP) ───────────────────────────────────────
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}        # set in environment / application-local.yml
+    password: ${MAIL_PASSWORD}        # Gmail App Password — NOT your login password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+        debug: false                  # set true to see raw SMTP handshake in logs
+
+  # ─── Kafka ───────────────────────────────────────────────────
+  kafka:
+    bootstrap-servers: localhost:9092
+
+# ─── Actuator ────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+# ─── Logging ─────────────────────────────────────────────────
+logging:
+  level:
+    com.citicore.notification: DEBUG
+    org.springframework.kafka: INFO
+    org.apache.kafka: WARN
