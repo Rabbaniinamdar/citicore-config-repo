@@ -50,8 +50,8 @@ jwt:
 #      auto-create: true
 
   # ─── JPA defaults ──────────────────────────────────────────
+spring:
   jpa:
-    database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: update
     show-sql: true
@@ -59,12 +59,6 @@ jwt:
       hibernate:
         format_sql: true
 
-  # ─── SQL init ──────────────────────────────────────────────
-  sql:
-    init:
-      mode: always
-
-  # ─── Error response ────────────────────────────────────────
   mvc:
     throw-exception-if-no-handler-found: true
 
