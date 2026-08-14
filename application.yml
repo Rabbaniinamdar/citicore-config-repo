@@ -80,6 +80,9 @@ aws:
   s3:
     bucket: ${S3_BUCKET:citicore-kyc-docs}
 
+details:
+  name: "mahammad rabbani"
+
 # ─── Actuator (same exposure across all services) ─────────────
 management:
   endpoints:
