@@ -1,39 +1,74 @@
+# ─────────────────────────────────────────────────────────────
+# account-service.yml — OVERRIDES ONLY
+# Everything not listed here is inherited from application.yml
+# ─────────────────────────────────────────────────────────────
+
 server:
   port: 8083
-
-  sql:
-    init:
-      mode: always
-
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
 
 spring:
+  application:
+    name: account-service
+
+  # ─── Database (DEV: H2) ───────────────────────────────────
   datasource:
-    url: jdbc:h2:mem:accdb
+    url: jdbc:h2:mem:accdb;DB_CLOSE_DELAY=-1
     driver-class-name: org.h2.Driver
     username: sa
     password:
 
   jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
+    database-platform: org.hibernate.dialect.H2Dialect
 
   h2:
     console:
       enabled: true
       path: /h2-console
 
+  # ─── Kafka consumer group override ────────────────────────
+  # Consumes: transfer-requested-topic, debit-success-topic,
+  #           debit-failed-topic, credit-failed-topic, reversal-topic
+  kafka:
+    consumer:
+      group-id: account-group
 
-aws:
-  region: ap-south-1
-  s3:
-    bucket: your-kyc-bucket
+  # ─── Redis (balance cache — Cache-Aside pattern) ──────────
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
 
-  servlet:
-    multipart:
-      max-file-size: 5MB
-      max-request-size: 5MB
+  # ─── Scheduling (AccountOutboxPublisher polls every 5s) ───
+  task:
+    scheduling:
+      pool:
+        size: 2
+
+# ─── Account business rules ───────────────────────────────────
+citicore:
+  account:
+    min-savings-balance: 1000
+    min-current-balance: 5000
+
+logging:
+  level:
+    com.citicore.account: DEBUG
+    org.springframework.data.redis: WARN
+
+# ─── PROD override ────────────────────────────────────────────
+# spring:
+#   datasource:
+#     url: jdbc:postgresql://localhost:5432/citicore_account
+#     driver-class-name: org.postgresql.Driver
+#     username: ${DB_USERNAME}
+#     password: ${DB_PASSWORD}
+#   jpa:
+#     database-platform: org.hibernate.dialect.PostgreSQLDialect
+#     hibernate:
+#       ddl-auto: validate
+#     show-sql: false

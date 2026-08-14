@@ -1,48 +1,121 @@
-jwt:
-  secret: ${JWT_SECRET}
-  access-token-expiration: 1000000
-  refresh-token-expiration: 604800000
+# ─────────────────────────────────────────────────────────────
+# application.yml — SHARED CONFIG (Config Server)
+#
+# Inherited by ALL services automatically.
+# Service-specific files (auth-service.yml, user-service.yml etc.)
+# only override what is DIFFERENT for that service.
+#
+# Spring Cloud Config resolution order (last wins):
+#   1. application.yml          ← this file (lowest priority)
+#   2. {service-name}.yml       ← service-specific overrides
+#   3. {service-name}-{profile}.yml  ← profile overrides (highest)
+# ─────────────────────────────────────────────────────────────
 
-server:
-  error:
-    include-message: always
-
-spring:
-  jpa:
-    show-sql: true
-    hibernate:
-      ddl-auto: update
-
-  kafka:
-    bootstrap-servers: localhost:9092
-    consumer:
-      group-id: kyc-group
-      auto-offset-reset: earliest
-    admin:
-      auto-create: true
-
+# ─── Eureka (same for every service) ─────────────────────────
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka
-
+    fetch-registry: true
+    register-with-eureka: true
   instance:
     prefer-ip-address: true
     ip-address: 127.0.0.1
 
+# ─── JWT (same secret and expiry across all services) ─────────
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration: 1000000       # ~16 minutes in ms
+  refresh-token-expiration: 604800000    # 7 days in ms
+
+# ─── Kafka (shared bootstrap + common producer settings) ──────
+spring:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 10
+      properties:
+        enable.idempotence: true
+        retry.backoff.ms: 1000
+    # Consumer defaults — overridden per service with their own group-id
+    consumer:
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    admin:
+      auto-create: true
+
+  # ─── JPA defaults ──────────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  # ─── SQL init ──────────────────────────────────────────────
+  sql:
+    init:
+      mode: always
+
+  # ─── Error response ────────────────────────────────────────
+  mvc:
+    throw-exception-if-no-handler-found: true
+
+server:
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# ─── AWS (shared region — bucket overridden per service) ──────
+aws:
+  region: ${AWS_REGION:ap-south-1}
+  access-key: ${AWS_ACCESS_KEY}
+  secret-key: ${AWS_SECRET_KEY}
+  s3:
+    bucket: ${S3_BUCKET:citicore-kyc-docs}
+
+# ─── Actuator (same exposure across all services) ─────────────
 management:
   endpoints:
     web:
       exposure:
         include: health,info,metrics,prometheus,refresh
-
   endpoint:
     health:
       show-details: always
-
   metrics:
     enable:
       all: true
 
-sendgrid:
-  api-key: ${SEND_GRID_API_KEY}
+# ─── Resilience4j defaults (used by gateway — safe to define globally) ──
+resilience4j:
+  timelimiter:
+    instances:
+      default:
+        timeout-duration: 3s
+  circuitbreaker:
+    instances:
+      default:
+        register-health-indicator: true
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 2
+        record-exceptions:
+          - org.springframework.web.client.HttpClientErrorException
+          - java.util.concurrent.TimeoutException
+
+# ─── Logging defaults ─────────────────────────────────────────
+logging:
+  level:
+    root: INFO
+    org.apache.kafka: WARN
+    org.springframework.security: WARN
+    org.springframework.kafka: INFO
+    org.hibernate.SQL: WARN               # overridden to DEBUG per service if needed

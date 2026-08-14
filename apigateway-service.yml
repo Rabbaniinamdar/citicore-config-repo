@@ -1,3 +1,8 @@
+# ─────────────────────────────────────────────────────────────
+# apigateway-service.yml — OVERRIDES ONLY
+# Everything not listed here is inherited from application.yml
+# ─────────────────────────────────────────────────────────────
+
 server:
   port: 8080
 
@@ -5,45 +10,70 @@ spring:
   application:
     name: apigateway-service
 
+  # ─── Redis (Rate Limiter token bucket) ────────────────────
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
+  # ─── Gateway Routes ───────────────────────────────────────
   cloud:
     gateway:
       routes:
-        - id: transaction-service
-          uri: lb://transaction-service
-          predicates:
-            - Path=/transaction/**
-          filters:
-            - RewritePath=/transaction/(?<segment>.*), /api/v1/transaction/${segment}
 
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/auth/**
+            - Method=GET,POST
+          filters:
+            - RewritePath=/auth/(?<segment>.*), /api/v1/auth/${segment}
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter.replenishRate: 2
                 redis-rate-limiter.burstCapacity: 4
                 redis-rate-limiter.requestedTokens: 1
                 key-resolver: "#{@ipKeyResolver}"
-
             - name: CircuitBreaker
               args:
-                name: transactionCircuitBreaker
-                fallbackUri: forward:/fallback/transaction
+                name: authCircuitBreaker
+                fallbackUri: forward:/fallback/auth
                 failureRateThreshold: 50
                 slidingWindowSize: 10
                 minimumNumberOfCalls: 5
                 waitDurationInOpenState: 10s
 
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/users/**
+          filters:
+            - RewritePath=/users/(?<segment>.*), /api/v1/users/${segment}
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 2
+                redis-rate-limiter.burstCapacity: 4
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: userCircuitBreaker
+                fallbackUri: forward:/fallback/users
+                failureRateThreshold: 50
+                slidingWindowSize: 10
+                minimumNumberOfCalls: 5
+                waitDurationInOpenState: 10s
             - name: Retry
               args:
                 retries: 1
                 methods: GET
-
                 statuses:
                   - BAD_GATEWAY
                   - GATEWAY_TIMEOUT
                   - INTERNAL_SERVER_ERROR
-
                 exceptions:
                   - java.util.concurrent.TimeoutException
-
                 backoff:
                   firstBackoff: 100ms
                   maxBackoff: 500ms
@@ -56,14 +86,12 @@ spring:
             - Path=/accounts/**
           filters:
             - RewritePath=/accounts/(?<segment>.*), /api/v1/accounts/${segment}
-
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter.replenishRate: 2
                 redis-rate-limiter.burstCapacity: 4
                 redis-rate-limiter.requestedTokens: 1
                 key-resolver: "#{@ipKeyResolver}"
-
             - name: CircuitBreaker
               args:
                 name: accountCircuitBreaker
@@ -72,136 +100,115 @@ spring:
                 slidingWindowSize: 10
                 minimumNumberOfCalls: 5
                 waitDurationInOpenState: 10s
-
             - name: Retry
               args:
                 retries: 1
                 methods: GET
-
                 statuses:
                   - BAD_GATEWAY
                   - GATEWAY_TIMEOUT
                   - INTERNAL_SERVER_ERROR
-
                 exceptions:
                   - java.util.concurrent.TimeoutException
-
                 backoff:
                   firstBackoff: 100ms
                   maxBackoff: 500ms
                   factor: 2
                   basedOnPreviousValue: true
 
-        - id: user-service
-          uri: lb://user-service
+        - id: transaction-service
+          uri: lb://transaction-service
           predicates:
-            - Path=/users/**
-
+            - Path=/transaction/**
           filters:
-            - RewritePath=/users/(?<segment>.*), /api/v1/users/${segment}
-
-
+            - RewritePath=/transaction/(?<segment>.*), /api/v1/transaction/${segment}
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter.replenishRate: 2
                 redis-rate-limiter.burstCapacity: 4
                 redis-rate-limiter.requestedTokens: 1
                 key-resolver: "#{@ipKeyResolver}"
-
             - name: CircuitBreaker
               args:
-                name: userCircuitBreaker
-                fallbackUri: forward:/fallback/users
+                name: transactionCircuitBreaker
+                fallbackUri: forward:/fallback/transaction
                 failureRateThreshold: 50
                 slidingWindowSize: 10
                 minimumNumberOfCalls: 5
                 waitDurationInOpenState: 10s
-
-
             - name: Retry
               args:
-                retries: 1   # 🔥 reduced from 3 → avoids retry masking failures
-                methods: GET
-
+                retries: 1
+                methods: GET    # POST excluded — /transfer is non-idempotent
                 statuses:
                   - BAD_GATEWAY
                   - GATEWAY_TIMEOUT
                   - INTERNAL_SERVER_ERROR
-
                 exceptions:
                   - java.util.concurrent.TimeoutException
-
                 backoff:
                   firstBackoff: 100ms
                   maxBackoff: 500ms
                   factor: 2
                   basedOnPreviousValue: true
 
-        - id: auth-service
-          uri: lb://auth-service
-          predicates:
-            - Path=/auth/**
-            - Method=GET,POST
-          filters:
-            - RewritePath=/auth/(?<segment>.*), /api/v1/auth/${segment}
-
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 2
-                redis-rate-limiter.burstCapacity: 4
-                redis-rate-limiter.requestedTokens: 1
-                key-resolver: "#{@ipKeyResolver}"
-            #            - name: Retry
-            #              args:
-            #                retries: 3
-            #
-            #                retryExceptions:
-            #                  - java.util.concurrent.TimeoutException
-            #                ignoreExceptions:
-            #                  - java.lang.NullPointerException
-            #                statuses:
-            #                  - BAD_GATEWAY
-            #                  - GATEWAY_TIMEOUT
-            #                  - INTERNAL_SERVER_ERROR
-            #                methods:
-            #                  - GET
-            #                  - POST
-            #                backoff:
-            #                  firstBackoff: 100ms
-            #                  maxBackoff: 1s
-            #                  factor: 2
-            #                  basedOnPreviousValue: true
-
-            - name: CircuitBreaker
-              args:
-                name: authCircuitBreaker
-                fallbackUri: forward:/fallback/auth
-
-
+# ─── Resilience4j — per circuit breaker config ────────────────
 resilience4j:
   circuitbreaker:
     instances:
-      customerCircuitBreaker:
-        recordExceptions:
+      authCircuitBreaker:
+        register-health-indicator: true
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 2
+        record-exceptions:
           - org.springframework.web.client.HttpClientErrorException
-        registerHealthIndicator: true
-        slidingWindowSize: 10
-        failureRateThreshold: 50
-        waitDurationInOpenState: 10s
-        permittedNumberOfCallsInHalfOpenState: 2
-
-      orderCircuitBreaker:
-        recordExceptions:
+          - java.util.concurrent.TimeoutException
+      userCircuitBreaker:
+        register-health-indicator: true
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 2
+        record-exceptions:
           - org.springframework.web.client.HttpClientErrorException
-        slidingWindowSize: 10
-        failureRateThreshold: 50
-
+          - java.util.concurrent.TimeoutException
+      accountCircuitBreaker:
+        register-health-indicator: true
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 2
+        record-exceptions:
+          - org.springframework.web.client.HttpClientErrorException
+          - java.util.concurrent.TimeoutException
+      transactionCircuitBreaker:
+        register-health-indicator: true
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 2
+        record-exceptions:
+          - org.springframework.web.client.HttpClientErrorException
+          - java.util.concurrent.TimeoutException
   timelimiter:
     instances:
-      customerCircuitBreaker:
-        timeoutDuration: 3s
-      orderCircuitBreaker:
-        timeoutDuration: 3s
+      authCircuitBreaker:
+        timeout-duration: 3s
+      userCircuitBreaker:
+        timeout-duration: 3s
+      accountCircuitBreaker:
+        timeout-duration: 3s
+      transactionCircuitBreaker:
+        timeout-duration: 3s
+
+# Gateway does not need Kafka — override to disable inherited config
+  kafka:
+    bootstrap-servers: ""   # gateway has no Kafka consumers or producers
+
 logging:
   level:
+    com.citicore.gateway: DEBUG
     org.springframework.cloud.gateway: DEBUG
+    reactor.netty: WARN

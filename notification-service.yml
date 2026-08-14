@@ -1,3 +1,8 @@
+# ─────────────────────────────────────────────────────────────
+# notification-service.yml — OVERRIDES ONLY
+# Everything not listed here is inherited from application.yml
+# ─────────────────────────────────────────────────────────────
+
 server:
   port: 8085
 
@@ -5,12 +10,12 @@ spring:
   application:
     name: notification-service
 
-  # ─── Mail (Gmail SMTP) ───────────────────────────────────────
+  # ─── Mail (Gmail SMTP) ────────────────────────────────────
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME}        # set in environment / application-local.yml
-    password: ${MAIL_PASSWORD}        # Gmail App Password — NOT your login password
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -18,25 +23,20 @@ spring:
           starttls:
             enable: true
             required: true
-        debug: false                  # set true to see raw SMTP handshake in logs
+        debug: false
 
-  # ─── Kafka ───────────────────────────────────────────────────
+  # ─── Kafka consumer group override ────────────────────────
+  # Consumes: account-events-topic, credit-success-topic,
+  #           credit-failed-topic, reversal-success-topic,
+  #           otp-topic, kyc-topic
   kafka:
-    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: notification-group
 
-# ─── Actuator ────────────────────────────────────────────────
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-  endpoint:
-    health:
-      show-details: always
+# notification-service is stateless — no DB, no Redis needed
+# Inherited kafka.producer config is used for DLQ publishing only
 
-# ─── Logging ─────────────────────────────────────────────────
 logging:
   level:
     com.citicore.notification: DEBUG
-    org.springframework.kafka: INFO
-    org.apache.kafka: WARN
+    org.springframework.mail: DEBUG   # set WARN in production
