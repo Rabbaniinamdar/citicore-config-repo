@@ -118,4 +118,5 @@ logging:
     org.apache.kafka: WARN
     org.springframework.security: WARN
     org.springframework.kafka: INFO
-    org.hibernate.SQL: WARN               # overridden to DEBUG per service if needed
+    org.hibernate.SQL: WARN
+    # overridden to DEBUG per service if needed
