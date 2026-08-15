@@ -16,7 +16,6 @@ spring:
     name: user-service
 
   # ─── Database (DEV: H2) ───────────────────────────────────
-  # ─── Database (DEV: H2) ───────────────────────────────────
   datasource:
     url: jdbc:mysql://localhost:3306/userdb
     driver-class-name: com.mysql.cj.jdbc.Driver

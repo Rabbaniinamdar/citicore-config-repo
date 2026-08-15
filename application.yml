@@ -76,7 +76,7 @@ aws:
     bucket: ${S3_BUCKET:citicore-kyc-docs}
 
 details:
-  name: "mahammad rabbani"
+  name: "mahammad inamdar"
 
 # ─── Actuator (same exposure across all services) ─────────────
 management:
