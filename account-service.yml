@@ -16,7 +16,7 @@ spring:
   # ─── PRIMARY MySQL (read + write) ─────────────────────────────
   datasource:
     primary:
-      jdbc-url: jdbc:mysql://localhost:3306/citicore_account?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      jdbc-url: jdbc:mysql://localhost:3308/citicore_account?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       username: ${DB_PRIMARY_USERNAME:citicore}
       password: ${DB_PRIMARY_PASSWORD:citicore123}
       driver-class-name: com.mysql.cj.jdbc.Driver
