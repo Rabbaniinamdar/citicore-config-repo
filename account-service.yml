@@ -1,41 +1,71 @@
-# ─────────────────────────────────────────────────────────────
-# account-service.yml — OVERRIDES ONLY
-# Everything not listed here is inherited from application.yml
-# ─────────────────────────────────────────────────────────────
-
 server:
   port: 8083
-  servlet:
-    multipart:
-      max-file-size: 5MB
-      max-request-size: 5MB
 
 spring:
   application:
     name: account-service
 
-  # ─── Database (DEV: H2) ───────────────────────────────────
+  # ─── Disable Spring Boot auto DataSource config ───────────────
+  # We define our own primary + replica DataSources manually.
+  # Without this, Spring Boot tries to auto-configure a single
+  # DataSource from spring.datasource.* and conflicts with ours.
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+
+  # ─── PRIMARY MySQL (read + write) ─────────────────────────────
   datasource:
-    url: jdbc:mysql://localhost:3306/accountdb
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    primary:
+      jdbc-url: jdbc:mysql://localhost:3306/citicore_account?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      username: ${DB_PRIMARY_USERNAME:citicore}
+      password: ${DB_PRIMARY_PASSWORD:citicore123}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      # HikariCP — set in DataSourceConfig.java
+      # maximumPoolSize: 10, minimumIdle: 3
 
-  # ─── Kafka consumer group override ────────────────────────
-  # Consumes: transfer-requested-topic, debit-success-topic,
-  #           debit-failed-topic, credit-failed-topic, reversal-topic
-  kafka:
-    consumer:
-      group-id: account-group
+    # ─── REPLICA MySQL (read only) ───────────────────────────────
+    replica:
+      jdbc-url: jdbc:mysql://localhost:3307/citicore_account?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      username: ${DB_REPLICA_USERNAME:citicore_readonly}
+      password: ${DB_REPLICA_PASSWORD:replica123}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      # HikariCP — set in DataSourceConfig.java
+      # maximumPoolSize: 20, minimumIdle: 5
 
-  # ─── Redis (balance cache — Cache-Aside pattern) ──────────
+  # ─── JPA / Hibernate ──────────────────────────────────────────
+  jpa:
+    # IMPORTANT: do NOT use create or create-drop in production.
+    # Partitioned tables must be created via schema.sql manually.
+    # Use 'validate' in production after schema is set up.
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        # Disable Hibernate's schema validation for partitioned tables
+        # (Hibernate does not understand MySQL partition clauses)
+        hbm2ddl:
+          auto: none
+
+  # ─── Schema init — runs schema.sql on startup ─────────────────
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      # schema.sql contains the partitioned CREATE TABLE statements
+
+  # ─── Redis ────────────────────────────────────────────────────
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       timeout: 2000ms
 
-  # ─── Scheduling (AccountOutboxPublisher polls every 5s) ───
+  kafka:
+    bootstrap-servers: localhost:9092
+
   task:
     scheduling:
       pool:
@@ -47,20 +77,11 @@ citicore:
     min-savings-balance: 1000
     min-current-balance: 5000
 
+# ─── Logging ──────────────────────────────────────────────────
 logging:
   level:
     com.citicore.account: DEBUG
     org.springframework.data.redis: WARN
-
-# ─── PROD override ────────────────────────────────────────────
-# spring:
-#   datasource:
-#     url: jdbc:postgresql://localhost:5432/citicore_account
-#     driver-class-name: org.postgresql.Driver
-#     username: ${DB_USERNAME}
-#     password: ${DB_PASSWORD}
-#   jpa:
-#     database-platform: org.hibernate.dialect.PostgreSQLDialect
-#     hibernate:
-#       ddl-auto: validate
-#     show-sql: false
+    org.apache.kafka: WARN
+    # Enable to debug DataSource routing decisions:
+    # com.citicore.account.config: TRACE
