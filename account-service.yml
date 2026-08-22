@@ -38,7 +38,7 @@ spring:
     # Partitioned tables must be created via schema.sql manually.
     # Use 'validate' in production after schema is set up.
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
