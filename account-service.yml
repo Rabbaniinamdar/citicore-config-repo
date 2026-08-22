@@ -25,8 +25,8 @@ spring:
 
     # ─── REPLICA MySQL (read only) ───────────────────────────────
     replica:
-      jdbc-url: jdbc:mysql://citicore-mysql-replica.cnk8ckkm2hsk.ap-south-1.rds.amazonaws.com/citicore_account?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-      username: admin
+      jdbc-url: jdbc:mysql://citicore-mysql-replica.cnk8ckkm2hsk.ap-south-1.rds.amazonaws.com:3306/citicore_account?useSSL=false&serverTimezone=UTC
+      username: ${DB_REPLICA_USERNAME}
       password: ${DB_PRIMARY_PASSWORD}
       driver-class-name: com.mysql.cj.jdbc.Driver
       # HikariCP — set in DataSourceConfig.java
