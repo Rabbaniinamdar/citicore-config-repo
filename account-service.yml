@@ -16,9 +16,9 @@ spring:
   # ─── PRIMARY MySQL (read + write) ─────────────────────────────
   datasource:
     primary:
-      jdbc-url: jdbc:mysql://localhost:3308/citicore_account?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-      username: ${DB_PRIMARY_USERNAME:citicore}
-      password: ${DB_PRIMARY_PASSWORD:citicore123}
+      jdbc-url: jdbc:mysql://citicore-mysql-primary.cnk8ckkm2hsk.ap-south-1.rds.amazonaws.com:3306/citicore_account?useSSL=false&serverTimezone=UTC
+      username: admin
+      password: ${DB_PRIMARY_PASSWORD}
       driver-class-name: com.mysql.cj.jdbc.Driver
       # HikariCP — set in DataSourceConfig.java
       # maximumPoolSize: 10, minimumIdle: 3
