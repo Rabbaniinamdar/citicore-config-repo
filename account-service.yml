@@ -5,55 +5,44 @@ spring:
   application:
     name: account-service
 
-  # ─── Disable Spring Boot auto DataSource config ───────────────
-  # We define our own primary + replica DataSources manually.
-  # Without this, Spring Boot tries to auto-configure a single
-  # DataSource from spring.datasource.* and conflicts with ours.
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 
   datasource:
 
-    # ─── PRIMARY MySQL (read + write) ────────────────────────────
+    # ─── PRIMARY ────────────────────────────────────────────────
     primary:
       jdbc-url: jdbc:mysql://citicore-mysql-primary.cnk8ckkm2hsk.ap-south-1.rds.amazonaws.com:3306/citicore_account?sslMode=VERIFY_IDENTITY&serverTimezone=UTC
       username: admin
       password: ${DB_PRIMARY_PASSWORD}
       driver-class-name: com.mysql.cj.jdbc.Driver
 
-    # ─── REPLICA MySQL (read only) ───────────────────────────────
+    # ─── REPLICA ───────────────────────────────────────────────
     replica:
       jdbc-url: jdbc:mysql://citicore-mysql-replica.cnk8ckkm2hsk.ap-south-1.rds.amazonaws.com:3306/citicore_account?sslMode=VERIFY_IDENTITY&serverTimezone=UTC
       username: ${DB_REPLICA_USERNAME}
       password: ${DB_REPLICA_PASSWORD}
       driver-class-name: com.mysql.cj.jdbc.Driver
 
-  # ─── JPA / Hibernate ──────────────────────────────────────────
+  # ─── JPA ────────────────────────────────────────────────────
   jpa:
-    # IMPORTANT: do NOT use create or create-drop in production.
-    # Partitioned tables must be created via schema.sql manually.
-    # Use 'validate' in production after schema is set up.
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
+
     show-sql: false
+
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
-        # Disable Hibernate's schema validation for partitioned tables
-        # (Hibernate does not understand MySQL partition clauses)
-        hbm2ddl:
-          auto: none
 
-  # ─── Schema init — runs schema.sql on startup ─────────────────
+  # ─── Do NOT execute schema.sql on startup ───────────────────
   sql:
     init:
-      mode: always
-      schema-locations: classpath:schema.sql
-      # schema.sql contains the partitioned CREATE TABLE statements
+      mode: never
 
-  # ─── Redis ────────────────────────────────────────────────────
+  # ─── Redis ──────────────────────────────────────────────────
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -68,17 +57,13 @@ spring:
       pool:
         size: 2
 
-# ─── Account business rules ───────────────────────────────────
 citicore:
   account:
     min-savings-balance: 1000
     min-current-balance: 5000
 
-# ─── Logging ──────────────────────────────────────────────────
 logging:
   level:
     com.citicore.account: DEBUG
     org.springframework.data.redis: WARN
     org.apache.kafka: WARN
-    # Enable to debug DataSource routing decisions:
-    # com.citicore.account.config: TRACE
