@@ -13,22 +13,21 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 
-  # ─── PRIMARY MySQL (read + write) ─────────────────────────────
   datasource:
+
+    # ─── PRIMARY MySQL (read + write) ────────────────────────────
     primary:
-jdbc-url: jdbc:mysql://citicore-mysql-primary.cnk8ckkm2hsk.ap-south-1.rds.amazonaws.com:3306/citicore_account?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC      username: admin
+      jdbc-url: jdbc:mysql://citicore-mysql-primary.cnk8ckkm2hsk.ap-south-1.rds.amazonaws.com:3306/citicore_account?sslMode=VERIFY_IDENTITY&serverTimezone=UTC
+      username: admin
       password: ${DB_PRIMARY_PASSWORD}
       driver-class-name: com.mysql.cj.jdbc.Driver
-      # HikariCP — set in DataSourceConfig.java
-      # maximumPoolSize: 10, minimumIdle: 3
 
     # ─── REPLICA MySQL (read only) ───────────────────────────────
     replica:
-jdbc-url: jdbc:mysql://citicore-mysql-replica.cnk8ckkm2hsk.ap-south-1.rds.amazonaws.com:3306/citicore_account?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC      username: ${DB_REPLICA_USERNAME}
+      jdbc-url: jdbc:mysql://citicore-mysql-replica.cnk8ckkm2hsk.ap-south-1.rds.amazonaws.com:3306/citicore_account?sslMode=VERIFY_IDENTITY&serverTimezone=UTC
+      username: ${DB_REPLICA_USERNAME}
       password: ${DB_REPLICA_PASSWORD}
       driver-class-name: com.mysql.cj.jdbc.Driver
-      # HikariCP — set in DataSourceConfig.java
-      # maximumPoolSize: 20, minimumIdle: 5
 
   # ─── JPA / Hibernate ──────────────────────────────────────────
   jpa:
