@@ -37,10 +37,11 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
 
-  # ─── Do NOT execute schema.sql on startup ───────────────────
+  # ─── Schema init — runs schema.sql on startup ─────────────────
   sql:
     init:
-      mode: never
+      mode: always
+      schema-locations: classpath:schema.sql
 
   # ─── Redis ──────────────────────────────────────────────────
   data:
