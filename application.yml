@@ -15,12 +15,11 @@
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka
+      defaultZone: http://eureka-server-8761-tcp.citicore:8761/eureka
     fetch-registry: true
     register-with-eureka: true
   instance:
-    prefer-ip-address: true
-    ip-address: 127.0.0.1
+    prefer-ip-address: false
 
 # ─── JWT (same secret and expiry across all services) ─────────
 jwt:
