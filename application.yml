@@ -27,27 +27,6 @@ jwt:
   access-token-expiration: 1000000       # ~16 minutes in ms
   refresh-token-expiration: 604800000    # 7 days in ms
 
-# ─── Kafka (shared bootstrap + common producer settings) ──────
-#spring:
-#  kafka:
-#    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-#    producer:
-#      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-#      value-serializer: org.apache.kafka.common.serialization.StringSerializer
-#      acks: all
-#      retries: 10
-#      properties:
-#        enable.idempotence: true
-#        retry.backoff.ms: 1000
-#    # Consumer defaults — overridden per service with their own group-id
-#    consumer:
-#      auto-offset-reset: earliest
-#      enable-auto-commit: false
-#      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-#      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-#    admin:
-#      auto-create: true
-
   # ─── JPA defaults ──────────────────────────────────────────
 spring:
   jpa:
