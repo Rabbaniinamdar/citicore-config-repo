@@ -1,16 +1,4 @@
-# ─────────────────────────────────────────────────────────────
-# notification-service.yml — OVERRIDES ONLY
-# Everything not listed here is inherited from application.yml
-# ─────────────────────────────────────────────────────────────
-
-server:
-  port: 8085
-
 spring:
-  application:
-    name: notification-service
-
-  # ─── Mail (Gmail SMTP) ────────────────────────────────────
   mail:
     host: smtp.gmail.com
     port: 587
@@ -23,25 +11,15 @@ spring:
           starttls:
             enable: true
             required: true
+          ssl:
+            trust: smtp.gmail.com
           connectiontimeout: 10000
           timeout: 10000
           writetimeout: 10000
-
-  # ─── Kafka consumer group override ────────────────────────
-  # Consumes: account-events-topic, credit-success-topic,
-  #           credit-failed-topic, reversal-success-topic,
-  #           otp-topic, kyc-topic
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
-    consumer:
-      group-id: notification-group
-
-# notification-service is stateless — no DB, no Redis needed
-# Inherited kafka.producer config is used for DLQ publishing only
 
 logging:
   level:
     com.citicore.notification: DEBUG
     org.springframework.mail: DEBUG
     jakarta.mail: DEBUG
-    org.eclipse.angus.mail: DEBUG   # set WARN in production
+    org.eclipse.angus.mail: DEBUG
