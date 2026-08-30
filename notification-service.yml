@@ -1,4 +1,14 @@
+# notification-service.yml
+# Configuration for CitiCore Notification Service
+
+server:
+  port: 8085
+
 spring:
+  application:
+    name: notification-service
+
+  # ─── Gmail SMTP ────────────────────────────────────────────
   mail:
     host: smtp.gmail.com
     port: 587
