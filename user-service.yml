@@ -31,8 +31,6 @@ spring:
 # ─── AWS (shared region — bucket overridden per service) ──────
 aws:
   region: ${AWS_REGION:ap-south-1}
-  access-key: ${AWS_ACCESS_KEY}
-  secret-key: ${AWS_SECRET_KEY}
   s3:
     bucket: ${S3_BUCKET:citicore-kyc-docs}
 
