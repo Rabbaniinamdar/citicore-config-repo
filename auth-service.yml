@@ -29,16 +29,3 @@ spring:
 logging:
   level:
     com.citicore.auth: DEBUG
-
-# ─── PROD override (use Spring profiles) ─────────────────────
-# spring:
-#   datasource:
-#     url: jdbc:postgresql://localhost:5432/citicore_auth
-#     driver-class-name: org.postgresql.Driver
-#     username: ${DB_USERNAME}
-#     password: ${DB_PASSWORD}
-#   jpa:
-#     database-platform: org.hibernate.dialect.PostgreSQLDialect
-#     hibernate:
-#       ddl-auto: validate
-#     show-sql: false

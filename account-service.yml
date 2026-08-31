@@ -13,14 +13,14 @@ spring:
 
     # ─── PRIMARY ────────────────────────────────────────────────
     primary:
-      jdbc-url: jdbc:mysql://citicore-mysql-primary.cnk8ckkm2hsk.ap-south-1.rds.amazonaws.com:3306/citicore_account?sslMode=VERIFY_IDENTITY&serverTimezone=UTC
-      username: admin
+      jdbc-url: jdbc:mysql://citicore-mysql-primary.cnk8ckkm2hsk.ap-south-1.rds.amazonaws.com:3306/citicore_account?sslMode=VERIFY_IDENTITY&serverTimezone=UTC&trustCertificateKeyStoreUrl=file:/app/rds/rds-truststore.jks&trustCertificateKeyStorePassword=${RDS_TRUSTSTORE_PASSWORD}
+      username: ${DB_PRIMARY_USERNAME}
       password: ${DB_PRIMARY_PASSWORD}
       driver-class-name: com.mysql.cj.jdbc.Driver
 
     # ─── REPLICA ───────────────────────────────────────────────
     replica:
-      jdbc-url: jdbc:mysql://citicore-mysql-replica.cnk8ckkm2hsk.ap-south-1.rds.amazonaws.com:3306/citicore_account?sslMode=VERIFY_IDENTITY&serverTimezone=UTC
+      jdbc-url: jdbc:mysql://citicore-mysql-replica.cnk8ckkm2hsk.ap-south-1.rds.amazonaws.com:3306/citicore_account?sslMode=VERIFY_IDENTITY&serverTimezone=UTC&trustCertificateKeyStoreUrl=file:/app/rds/rds-truststore.jks&trustCertificateKeyStorePassword=${RDS_TRUSTSTORE_PASSWORD}
       username: ${DB_REPLICA_USERNAME}
       password: ${DB_REPLICA_PASSWORD}
       driver-class-name: com.mysql.cj.jdbc.Driver
@@ -51,7 +51,7 @@ spring:
       timeout: 2000ms
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
 
   task:
     scheduling:
