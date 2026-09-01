@@ -14,7 +14,6 @@ spring:
 
   # ─────────────────────────────────────────────────────────
   # Redis
-  # Used by Spring Cloud Gateway RequestRateLimiter
   # ─────────────────────────────────────────────────────────
 
   data:
@@ -30,9 +29,11 @@ spring:
   cloud:
     gateway:
       routes:
+
         # =====================================================
         # AUTH SERVICE
         # =====================================================
+
         - id: auth-service
 
           uri: http://auth-service-8081-tcp.citicore:8081
@@ -42,6 +43,7 @@ spring:
             - Method=GET,POST
 
           filters:
+
             - RewritePath=/auth/(?<segment>.*), /api/v1/auth/${segment}
 
             - name: RequestRateLimiter
@@ -60,14 +62,17 @@ spring:
         # =====================================================
         # USER SERVICE
         # =====================================================
+
         - id: user-service
 
-          uri: lb://user-service
+          # Service Connect
+          uri: http://user-service-8082-tcp.citicore:8082
 
           predicates:
             - Path=/users/**
 
           filters:
+
             - RewritePath=/users/(?<segment>.*), /api/v1/users/${segment}
 
             - name: RequestRateLimiter
@@ -102,14 +107,17 @@ spring:
         # =====================================================
         # ACCOUNT SERVICE
         # =====================================================
+
         - id: account-service
 
-          uri: lb://account-service
+          # Service Connect
+          uri: http://account-service-8083-tcp.citicore:8083
 
           predicates:
             - Path=/accounts/**
 
           filters:
+
             - RewritePath=/accounts/(?<segment>.*), /api/v1/accounts/${segment}
 
             - name: RequestRateLimiter
@@ -145,7 +153,7 @@ spring:
         # TRANSACTION SERVICE
         #
         # Currently on hold.
-        # Keep route ready for future deployment.
+        # Do not deploy/use until Transaction Service is ready.
         # =====================================================
 
         - id: transaction-service
@@ -156,6 +164,7 @@ spring:
             - Path=/transaction/**
 
           filters:
+
             - RewritePath=/transaction/(?<segment>.*), /api/v1/transaction/${segment}
 
             - name: RequestRateLimiter
@@ -171,8 +180,8 @@ spring:
                 fallbackUri: forward:/fallback/transaction
 
             # GET only.
-            # POST /transfer is intentionally excluded because
-            # transfer is a non-idempotent operation.
+            # POST /transfer is excluded because transfer is
+            # a non-idempotent operation.
 
             - name: Retry
               args:
