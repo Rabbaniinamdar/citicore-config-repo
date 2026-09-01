@@ -1,31 +1,4 @@
-# ─────────────────────────────────────────────────────────────
-# apigateway-service.yml
-#
-# Service-specific configuration.
-# Shared configuration comes from application.yml
-# ─────────────────────────────────────────────────────────────
-
-server:
-  port: 8080
-
 spring:
-  application:
-    name: apigateway-service
-
-  # ─────────────────────────────────────────────────────────
-  # Redis
-  # ─────────────────────────────────────────────────────────
-
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      timeout: 2000ms
-
-  # ─────────────────────────────────────────────────────────
-  # Spring Cloud Gateway
-  # ─────────────────────────────────────────────────────────
-
   cloud:
     gateway:
       routes:
@@ -33,17 +6,12 @@ spring:
         # =====================================================
         # AUTH SERVICE
         # =====================================================
-
         - id: auth-service
-
           uri: http://auth-service-8081-tcp.citicore:8081
-
           predicates:
             - Path=/auth/**
             - Method=GET,POST
-
           filters:
-
             - RewritePath=/auth/(?<segment>.*), /api/v1/auth/${segment}
 
             - name: RequestRateLimiter
@@ -62,17 +30,11 @@ spring:
         # =====================================================
         # USER SERVICE
         # =====================================================
-
         - id: user-service
-
-          # Service Connect
           uri: http://user-service-8082-tcp.citicore:8082
-
           predicates:
             - Path=/users/**
-
           filters:
-
             - RewritePath=/users/(?<segment>.*), /api/v1/users/${segment}
 
             - name: RequestRateLimiter
@@ -107,17 +69,11 @@ spring:
         # =====================================================
         # ACCOUNT SERVICE
         # =====================================================
-
         - id: account-service
-
-          # Service Connect
           uri: http://citicore-account-service-8083-tcp.citicore:8083
-
           predicates:
             - Path=/accounts/**
-
           filters:
-
             - RewritePath=/accounts/(?<segment>.*), /api/v1/accounts/${segment}
 
             - name: RequestRateLimiter
@@ -147,134 +103,3 @@ spring:
                   maxBackoff: 500ms
                   factor: 2
                   basedOnPreviousValue: true
-
-
-        # =====================================================
-        # TRANSACTION SERVICE
-        #
-        # Currently on hold.
-        # Do not deploy/use until Transaction Service is ready.
-        # =====================================================
-
-        - id: transaction-service
-
-          uri: lb://transaction-service
-
-          predicates:
-            - Path=/transaction/**
-
-          filters:
-
-            - RewritePath=/transaction/(?<segment>.*), /api/v1/transaction/${segment}
-
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 2
-                redis-rate-limiter.burstCapacity: 4
-                redis-rate-limiter.requestedTokens: 1
-                key-resolver: "#{@ipKeyResolver}"
-
-            - name: CircuitBreaker
-              args:
-                name: transactionCircuitBreaker
-                fallbackUri: forward:/fallback/transaction
-
-            # GET only.
-            # POST /transfer is excluded because transfer is
-            # a non-idempotent operation.
-
-            - name: Retry
-              args:
-                retries: 1
-                methods: GET
-                statuses:
-                  - BAD_GATEWAY
-                  - GATEWAY_TIMEOUT
-                  - INTERNAL_SERVER_ERROR
-                exceptions:
-                  - java.util.concurrent.TimeoutException
-                backoff:
-                  firstBackoff: 100ms
-                  maxBackoff: 500ms
-                  factor: 2
-                  basedOnPreviousValue: true
-
-
-# ─────────────────────────────────────────────────────────────
-# Resilience4j
-# ─────────────────────────────────────────────────────────────
-
-resilience4j:
-
-  circuitbreaker:
-
-    instances:
-
-      authCircuitBreaker:
-        register-health-indicator: true
-        sliding-window-size: 10
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10s
-        permitted-number-of-calls-in-half-open-state: 2
-        minimum-number-of-calls: 5
-        record-exceptions:
-          - java.util.concurrent.TimeoutException
-
-      userCircuitBreaker:
-        register-health-indicator: true
-        sliding-window-size: 10
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10s
-        permitted-number-of-calls-in-half-open-state: 2
-        minimum-number-of-calls: 5
-        record-exceptions:
-          - java.util.concurrent.TimeoutException
-
-      accountCircuitBreaker:
-        register-health-indicator: true
-        sliding-window-size: 10
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10s
-        permitted-number-of-calls-in-half-open-state: 2
-        minimum-number-of-calls: 5
-        record-exceptions:
-          - java.util.concurrent.TimeoutException
-
-      transactionCircuitBreaker:
-        register-health-indicator: true
-        sliding-window-size: 10
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10s
-        permitted-number-of-calls-in-half-open-state: 2
-        minimum-number-of-calls: 5
-        record-exceptions:
-          - java.util.concurrent.TimeoutException
-
-
-  timelimiter:
-
-    instances:
-
-      authCircuitBreaker:
-        timeout-duration: 3s
-
-      userCircuitBreaker:
-        timeout-duration: 3s
-
-      accountCircuitBreaker:
-        timeout-duration: 3s
-
-      transactionCircuitBreaker:
-        timeout-duration: 3s
-
-
-# ─────────────────────────────────────────────────────────────
-# Logging
-# ─────────────────────────────────────────────────────────────
-
-logging:
-
-  level:
-    com.citicore.gateway: DEBUG
-    org.springframework.cloud.gateway: DEBUG
-    reactor.netty: WARN
