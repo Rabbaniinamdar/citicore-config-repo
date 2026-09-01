@@ -20,15 +20,17 @@ eureka:
     register-with-eureka: true
   instance:
     prefer-ip-address: true
-
-# ─── JWT (same secret and expiry across all services) ─────────
-jwt:
-  secret: ${JWT_SECRET}
-  access-token-expiration: 1000000       # ~16 minutes in ms
-  refresh-token-expiration: 604800000    # 7 days in ms
-
-  # ─── JPA defaults ──────────────────────────────────────────
 spring:
+  cloud:
+    inetutils:
+      preferred-networks:
+        - 10.0.          # matches your VPC CIDR (10.0.0.0/16) — always picks the real ENI IP
+      ignored-interfaces:
+        - docker0
+        - veth.*
+        - eth1
+        -
+  # ─── JPA defaults ──────────────────────────────────────────
   jpa:
     hibernate:
       ddl-auto: update
@@ -85,3 +87,9 @@ logging:
     org.springframework.kafka: INFO
     org.hibernate.SQL: WARN
     # overridden to DEBUG per service if needed
+
+# ─── JWT (same secret and expiry across all services) ─────────
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration: 1000000       # ~16 minutes in ms
+  refresh-token-expiration: 604800000    # 7 days in ms
