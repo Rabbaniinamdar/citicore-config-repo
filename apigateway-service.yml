@@ -1,6 +1,8 @@
 # ─────────────────────────────────────────────────────────────
-# apigateway-service.yml — OVERRIDES ONLY
-# Everything not listed here is inherited from application.yml
+# apigateway-service.yml
+#
+# Service-specific configuration.
+# Shared configuration comes from application.yml
 # ─────────────────────────────────────────────────────────────
 
 server:
@@ -10,60 +12,76 @@ spring:
   application:
     name: apigateway-service
 
-  # ─── Redis (Rate Limiter token bucket) ────────────────────
+  # ─────────────────────────────────────────────────────────
+  # Redis
+  # Used by Spring Cloud Gateway RequestRateLimiter
+  # ─────────────────────────────────────────────────────────
+
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       timeout: 2000ms
 
-  # ─── Gateway Routes ───────────────────────────────────────
+  # ─────────────────────────────────────────────────────────
+  # Spring Cloud Gateway
+  # ─────────────────────────────────────────────────────────
+
   cloud:
     gateway:
       routes:
-
+        # =====================================================
+        # AUTH SERVICE
+        # =====================================================
         - id: auth-service
+
           uri: lb://auth-service
+
           predicates:
             - Path=/auth/**
             - Method=GET,POST
+
           filters:
             - RewritePath=/auth/(?<segment>.*), /api/v1/auth/${segment}
+
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter.replenishRate: 2
                 redis-rate-limiter.burstCapacity: 4
                 redis-rate-limiter.requestedTokens: 1
                 key-resolver: "#{@ipKeyResolver}"
+
             - name: CircuitBreaker
               args:
                 name: authCircuitBreaker
                 fallbackUri: forward:/fallback/auth
-                failureRateThreshold: 50
-                slidingWindowSize: 10
-                minimumNumberOfCalls: 5
-                waitDurationInOpenState: 10s
 
+
+        # =====================================================
+        # USER SERVICE
+        # =====================================================
         - id: user-service
+
           uri: lb://user-service
+
           predicates:
             - Path=/users/**
+
           filters:
             - RewritePath=/users/(?<segment>.*), /api/v1/users/${segment}
+
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter.replenishRate: 2
                 redis-rate-limiter.burstCapacity: 4
                 redis-rate-limiter.requestedTokens: 1
                 key-resolver: "#{@ipKeyResolver}"
+
             - name: CircuitBreaker
               args:
                 name: userCircuitBreaker
                 fallbackUri: forward:/fallback/users
-                failureRateThreshold: 50
-                slidingWindowSize: 10
-                minimumNumberOfCalls: 5
-                waitDurationInOpenState: 10s
+
             - name: Retry
               args:
                 retries: 1
@@ -80,26 +98,32 @@ spring:
                   factor: 2
                   basedOnPreviousValue: true
 
+
+        # =====================================================
+        # ACCOUNT SERVICE
+        # =====================================================
         - id: account-service
+
           uri: lb://account-service
+
           predicates:
             - Path=/accounts/**
+
           filters:
             - RewritePath=/accounts/(?<segment>.*), /api/v1/accounts/${segment}
+
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter.replenishRate: 2
                 redis-rate-limiter.burstCapacity: 4
                 redis-rate-limiter.requestedTokens: 1
                 key-resolver: "#{@ipKeyResolver}"
+
             - name: CircuitBreaker
               args:
                 name: accountCircuitBreaker
                 fallbackUri: forward:/fallback/account
-                failureRateThreshold: 50
-                slidingWindowSize: 10
-                minimumNumberOfCalls: 5
-                waitDurationInOpenState: 10s
+
             - name: Retry
               args:
                 retries: 1
@@ -116,30 +140,44 @@ spring:
                   factor: 2
                   basedOnPreviousValue: true
 
+
+        # =====================================================
+        # TRANSACTION SERVICE
+        #
+        # Currently on hold.
+        # Keep route ready for future deployment.
+        # =====================================================
+
         - id: transaction-service
+
           uri: lb://transaction-service
+
           predicates:
             - Path=/transaction/**
+
           filters:
             - RewritePath=/transaction/(?<segment>.*), /api/v1/transaction/${segment}
+
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter.replenishRate: 2
                 redis-rate-limiter.burstCapacity: 4
                 redis-rate-limiter.requestedTokens: 1
                 key-resolver: "#{@ipKeyResolver}"
+
             - name: CircuitBreaker
               args:
                 name: transactionCircuitBreaker
                 fallbackUri: forward:/fallback/transaction
-                failureRateThreshold: 50
-                slidingWindowSize: 10
-                minimumNumberOfCalls: 5
-                waitDurationInOpenState: 10s
+
+            # GET only.
+            # POST /transfer is intentionally excluded because
+            # transfer is a non-idempotent operation.
+
             - name: Retry
               args:
                 retries: 1
-                methods: GET    # POST excluded — /transfer is non-idempotent
+                methods: GET
                 statuses:
                   - BAD_GATEWAY
                   - GATEWAY_TIMEOUT
@@ -152,62 +190,81 @@ spring:
                   factor: 2
                   basedOnPreviousValue: true
 
-# ─── Resilience4j — per circuit breaker config ────────────────
+
+# ─────────────────────────────────────────────────────────────
+# Resilience4j
+# ─────────────────────────────────────────────────────────────
+
 resilience4j:
+
   circuitbreaker:
+
     instances:
+
       authCircuitBreaker:
         register-health-indicator: true
         sliding-window-size: 10
         failure-rate-threshold: 50
         wait-duration-in-open-state: 10s
         permitted-number-of-calls-in-half-open-state: 2
+        minimum-number-of-calls: 5
         record-exceptions:
-          - org.springframework.web.client.HttpClientErrorException
           - java.util.concurrent.TimeoutException
+
       userCircuitBreaker:
         register-health-indicator: true
         sliding-window-size: 10
         failure-rate-threshold: 50
         wait-duration-in-open-state: 10s
         permitted-number-of-calls-in-half-open-state: 2
+        minimum-number-of-calls: 5
         record-exceptions:
-          - org.springframework.web.client.HttpClientErrorException
           - java.util.concurrent.TimeoutException
+
       accountCircuitBreaker:
         register-health-indicator: true
         sliding-window-size: 10
         failure-rate-threshold: 50
         wait-duration-in-open-state: 10s
         permitted-number-of-calls-in-half-open-state: 2
+        minimum-number-of-calls: 5
         record-exceptions:
-          - org.springframework.web.client.HttpClientErrorException
           - java.util.concurrent.TimeoutException
+
       transactionCircuitBreaker:
         register-health-indicator: true
         sliding-window-size: 10
         failure-rate-threshold: 50
         wait-duration-in-open-state: 10s
         permitted-number-of-calls-in-half-open-state: 2
+        minimum-number-of-calls: 5
         record-exceptions:
-          - org.springframework.web.client.HttpClientErrorException
           - java.util.concurrent.TimeoutException
+
+
   timelimiter:
+
     instances:
+
       authCircuitBreaker:
         timeout-duration: 3s
+
       userCircuitBreaker:
         timeout-duration: 3s
+
       accountCircuitBreaker:
         timeout-duration: 3s
+
       transactionCircuitBreaker:
         timeout-duration: 3s
 
-# Gateway does not need Kafka — override to disable inherited config
-  kafka:
-    bootstrap-servers: ""   # gateway has no Kafka consumers or producers
+
+# ─────────────────────────────────────────────────────────────
+# Logging
+# ─────────────────────────────────────────────────────────────
 
 logging:
+
   level:
     com.citicore.gateway: DEBUG
     org.springframework.cloud.gateway: DEBUG
