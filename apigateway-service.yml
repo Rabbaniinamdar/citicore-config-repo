@@ -35,7 +35,7 @@ spring:
         # =====================================================
         - id: auth-service
 
-          uri: lb://auth-service
+          uri: http://auth-service-8081-tcp.citicore:8081
 
           predicates:
             - Path=/auth/**

@@ -24,12 +24,12 @@ spring:
   cloud:
     inetutils:
       preferred-networks:
-        - 10.0.          # matches your VPC CIDR (10.0.0.0/16) — always picks the real ENI IP
+        - 10.0.
       ignored-interfaces:
         - docker0
         - veth.*
         - eth1
-        -
+
   # ─── JPA defaults ──────────────────────────────────────────
   jpa:
     hibernate:
