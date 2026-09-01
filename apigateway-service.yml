@@ -111,7 +111,7 @@ spring:
         - id: account-service
 
           # Service Connect
-          uri: http://account-service-8083-tcp.citicore:8083
+          uri: http://citicore-account-service-8083-tcp.citicore:8083
 
           predicates:
             - Path=/accounts/**
