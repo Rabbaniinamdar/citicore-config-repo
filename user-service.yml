@@ -41,6 +41,3 @@ kyc:
 logging:
   level:
     com.citicore.user: DEBUG
-
-details:
-  name: mahammad Rabbani
